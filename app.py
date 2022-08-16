@@ -1,27 +1,45 @@
-#Importamos las librerias necesarias para poder realizar el aplicativo web
-import os
-from flask import Flask, render_template
 
-#Objeto para inicilizar la aplicacion
-app = Flask(__name__,template_folder='template/layouts')
-#recuperar nombres de ruta
-app._static_folder = os.path.abspath("template/static/")
+from flask import Flask,request,Response,jsonify
+from flask_pymongo  import PyMongo
 
-#Controlador de la ruta inicial
-@app.route("/")
-#Función que redirige la página principal
-def index():
-    #restorna la plantilla index.html
-    return render_template("index.html")
+from flask_uuid import FlaskUUID
+from flask_cors   import CORS
+import uuid
+#
+from database import mydb 
+#
+from routes.admin import user_admin
+from routes.auth import auth
 
-#Controlador de la ruta inicial
-@app.route("/gamer")
-#Función que redirige la segunda página dónde está el juego
-def gamer():
-    #restorna la plantilla saltobloques.html
-    return render_template("game.html")
+app  = Flask(__name__)
+# app.config['MONGO_URI'] = 'mongodb://localhost/projectSGA'
+# mongo  = PyMongo(app) 
 
-#Main de la app
-if __name__ == "__main__":
-    #evitar reinicios excesivos del servidor
+
+FlaskUUID(app)
+
+#settings 
+CORS(app)
+
+app.register_blueprint(user_admin,url_prefix="/api")
+app.register_blueprint(auth,url_prefix="/api")
+# Create Role POST 
+@app.route('/createRole',methods=['POST'])
+def createRole():
+    name_role = request.json['name_role']
+
+    if name_role : 
+        # roleCollection = mydb['role']
+        id_role = mydb.db.role.insert_one({"_id":str(uuid.uuid4()),"name_role":name_role}).inserted_id
+        print(id_role)
+        return id_role
+    else:
+        return {"message":"Icomplete Data"}
+
+@app.route('/',methods=['GET'])
+def home():
+
+    return {'message':"Welcome"}
+
+if __name__ == '__main__':
     app.run(debug=True)
